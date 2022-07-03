@@ -8,7 +8,7 @@ try:
 except ModuleNotFoundError:
 	raise RuntimeError("spiceapi module not installed")
 
-cabframe = cv2.imread("./img/cabframe.png", cv2.IMREAD_UNCHANGED)
+cabframe = cv2.imread("./img/cabframe_light.png", cv2.IMREAD_UNCHANGED)
 cablight = cv2.imread("./img/cablight.png", cv2.IMREAD_UNCHANGED)
 
 
@@ -35,7 +35,7 @@ def attach_img(bg, fg, x_offset, y_offset):
 
 def split(img):
     # extract alpha channel
-    alpha = img[:,:,3]
+    alpha = img[:,:,3] / 1.25
     # extract bgr channels
     bgr = img[:,:,0:3]
     return alpha, bgr
@@ -68,7 +68,8 @@ def main():
         if cv2.waitKey(1) & 0xFF == ord('q'):
             cv2.destroyAllWindows()
             break
-
+        
+        #get RGB info
         LightsInfo = lights_read(spice)
         for light in LightsInfo:
             #get RGB info
@@ -77,16 +78,24 @@ def main():
             elif light[0] == "Wing Left Up G":
                 LightG = math.floor(light[1] * 255)
             elif light[0] == "Wing Left Up B":
-                LightB = math.floor(light[1] * 255)
+                tempB = light[1] * 255 + 30
+                if tempB >= 255:
+                    LightB = 255;
+                elif tempB >= 180:
+                    LightB = math.floor(tempB) 
+                else:
+                    LightB = math.floor(light[1] * 255)
             else: continue
 
         #create image
         bg_copy = cabframe.copy()
         color_cablight = change_color(cab_light_bgr, cab_light_alpha, LightR, LightG, LightB)
         img_with_cablight = attach_img(bg_copy, color_cablight, 0, 0)
+
+        #create window
         cv2.namedWindow(TitleName, cv2.WINDOW_NORMAL)
         cv2.resizeWindow(TitleName, 541, 1080)
-        cv2.imshow(TitleName, remove_transparency(img_with_cablight))
-
+        cv2.imshow(TitleName, img_with_cablight)
+        #remove_transparency(img_with_cablight)
 if __name__ == "__main__":
     main()
